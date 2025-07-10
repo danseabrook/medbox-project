@@ -1,0 +1,10 @@
+{
+  "sql": "SELECT * FROM 'medbox/+/+/from-device/status'",
+  "actions": [
+    {
+      "lambda": {
+        "functionArn": "arn:aws:lambda:eu-west-2:528757795184:function:medbox-simple"
+      }
+    }
+  ]
+}

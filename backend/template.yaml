@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'MedBox - Simple Start with Database'
+
+Resources:
+  ProcessMedicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'medbox-simple'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MedicationHistoryTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MedicationHistoryTable
+      InlineCode: |
+        import json
+        import boto3
+        import uuid
+        import os
+        from datetime import datetime
+        
+        def lambda_handler(event, context):
+            print("ESP32 message received!")
+            print(json.dumps(event, indent=2))
+            
+            try:
+                dynamodb = boto3.resource('dynamodb')
+                table = dynamodb.Table(os.environ['TABLE_NAME'])
+                
+                item = {
+                    'eventId': str(uuid.uuid4()),
+                    'deviceId': event.get('device_id', 'unknown'),
+                    'userId': event.get('user_id', 'unknown'),
+                    'timestamp': event.get('timestamp', 0),
+                    'savedAt': datetime.now().isoformat()
+                }
+                
+                table.put_item(Item=item)
+                print("Saved to database successfully!")
+                
+            except Exception as e:
+                print(f"Database error: {str(e)}")
+            
+            return {'statusCode': 200}
+
+  MedicationHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 'medbox-history'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: eventId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: eventId
+          KeyType: HASH
